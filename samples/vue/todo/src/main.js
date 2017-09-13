@@ -1,7 +1,14 @@
-import Vue from 'vue'
-import App from './App.vue'
+import Vue from "vue";
+import App from "./App.vue";
+
+Vue.use(require("../../../../lib/vue"), {
+	data: {
+		todos: [],
+		newTodo: ""
+	}
+});
 
 new Vue({
-  el: '#app',
-  render: h => h(App)
-})
+	el: "#app",
+	render: h => h(App)
+});

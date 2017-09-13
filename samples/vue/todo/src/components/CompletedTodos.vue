@@ -12,11 +12,16 @@
 	</div>
 </template>
 <script>
-const store = require("../store");
+
 export default {
-	data() {
+	nqlx() {
 		return {
-			raw_todos: []
+			raw_todos: {
+				query: {
+					todos: []
+				},
+				cb: val => val.todos
+			}
 		}
 	},
 	computed: {
@@ -24,16 +29,10 @@ export default {
 			return this.raw_todos.filter((todo) => { return todo.completed })
 		}
 	},
-	created() {
-		store.watch({ todos: [] }, val => {
-			this.raw_todos = val.todos;
-
-		});
-	},
 	methods: {
 		remove(todo) {
 			this.raw_todos.splice(this.raw_todos.indexOf(todo), 1);
-			store.put({
+			this.$store.put({
 				todos: this.raw_todos
 			});
 		}

@@ -5,30 +5,24 @@
 	</div>
 </template>
 <script>
-const store = require("../store");
+
 
 export default {
-	created() {
-		store.watch({ newTodo: 1 }, val => {
-			this.newTodo = val.newTodo;
-		});
-	},
-	data() {
-		return {
-			newTodo: undefined
-		}
+	nqlx: {
+		newTodo: 1
 	},
 	methods: {
 		getTodo(e) {
-			store.put({
+			this.$store.put({
 				newTodo: e.target.value
 			});
 		},
 		addTodo() {
-			const state = store.get({ todos: [], newTodo: 1 });
+			const state = this.$store.get({ todos: [], newTodo: 1 });
+
 			state.todos.push({ body: state.newTodo, completed: false });
 			state.newTodo = "";
-			store.put(state);
+			this.$store.put(state);
 		}
 	}
 }

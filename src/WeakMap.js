@@ -1,6 +1,8 @@
+const { unique_id } = require("./util");
+
 class WeakMap {
 	constructor() {
-		this.name = "__wm-" + ((Math.random() * 1e9) >>> 0);
+		this.name = "__wm-" + unique_id();
 	}
 
 	set(key, value) {

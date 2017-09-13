@@ -20,36 +20,35 @@
 	</div>
 </template>
 <script>
-const store = require("../store");
+
 
 export default {
-	data() {
+	nqlx() {
 		return {
-			raw_todos: []
+			raw_todos: {
+				query: {
+					todos: []
+				},
+				cb: val => val.todos
+			}
 		}
-	},
-	created() {
-		store.watch({ todos: [] }, val => {
-			this.raw_todos = val.todos
-		});
 	},
 	computed: {
 		todos() {
-
 			return this.raw_todos.filter((todo) => { return !todo.completed })
 		}
 	},
 	methods: {
 		edit(todo) {
 			this.raw_todos.splice(this.raw_todos.indexOf(todo), 1)
-			store.put({
+			this.$store.put({
 				todos: this.raw_todos,
 				newTodo: todo.body
 			});
 		},
 		complete(todo) {
 			todo.completed = !todo.completed;
-			store.put({
+			this.$store.put({
 				todos: this.raw_todos
 			});
 
@@ -57,7 +56,7 @@ export default {
 		},
 		remove(todo) {
 			this.raw_todos.splice(this.raw_todos.indexOf(todo), 1);
-			store.put({
+			this.$store.put({
 				todos: this.raw_todos
 			});
 		},
