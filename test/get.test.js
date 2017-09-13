@@ -136,7 +136,7 @@ test("get#nest array query", function() {
 
 	db.put(val);
 
-	let res = db.get({ a: [[[1]]] });
+	let res = db.get({ a: [[[]]] });
 	expect(res).toEqual({ a: [[[1, 2, 3]]] });
 });
 
@@ -166,16 +166,4 @@ test("get#invalid query", function() {
 			a: () => true
 		})
 	).toThrow("Invalid query");
-
-	expect(() =>
-		db.get({
-			a: [1, 1, 1]
-		})
-	).toThrow("Invalid query: 1,1,1");
-
-	expect(() =>
-		db.get({
-			a: [[1, 1, 1]]
-		})
-	).toThrow("Invalid query: 1,1,1");
 });

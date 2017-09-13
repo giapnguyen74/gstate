@@ -15,13 +15,13 @@ function get_all_primitive_prop(state, info) {
 function get_prop_array_item(item, query, info) {
 	if (is_primitive_value(item)) {
 		return item;
-	} else if (Array.isArray(query) && query.length == 1) {
+	} else if (Array.isArray(query)) {
 		// query item as array
 		return get_prop_array_value(item, query[0], info);
 	} else if (is_object(query)) {
 		//query item as object
 		return get_object_query(item, query, info);
-	} else if (query === 1) {
+	} else if (query === undefined || query === 1) {
 		// query all prop as long as value is primitive
 		return get_all_primitive_prop(item, info);
 	} else {
@@ -66,7 +66,7 @@ function get_object_query(state, query, info) {
 		// if stateProp is primitive, copy stateProp to result ignore query.
 		if (is_primitive_value(stateProp)) {
 			result[prop] = stateProp;
-		} else if (Array.isArray(queryProp) && queryProp.length == 1) {
+		} else if (Array.isArray(queryProp)) {
 			// query state as array
 			result[prop] = get_prop_array_value(stateProp, queryProp[0], info);
 		} else if (is_object(queryProp)) {
