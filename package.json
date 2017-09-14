@@ -14,8 +14,7 @@
 		"type": "git",
 		"url": "git+https://github.com/giapnguyen74/nqlx.git"
 	},
-	"author":
-		"“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
+	"author": "“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/giapnguyen74/nqlx/issues"
@@ -30,5 +29,6 @@
 	},
 	"jest": {
 		"testEnvironment": "jsdom"
-	}
+	},
+	"dependencies": {}
 }
