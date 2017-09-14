@@ -17,6 +17,6 @@ Read state out nqlx is quite different. Actually you don't read a state but it's
 | <img src="images/nxql1.png" width="300">  | <img src="images/nxql2.png" width="300">  |<img src="images/nxql3.png" width="300"> |
 
 # Demo
-<img src="images/nxql-demo.gif">
+<img src="images/nxql-demo2.gif">
 
 
