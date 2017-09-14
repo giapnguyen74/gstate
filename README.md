@@ -17,62 +17,11 @@ Read state out nqlx is quite different. Actually you don't read a state but it's
 | <img src="images/nxql1.png" width="300">  | <img src="images/nxql2.png" width="300">  |<img src="images/nxql3.png" width="300"> |
 
 # Demo
-```jsx
-import React from "react";
-import { connect, store } from "../store.js";
-
-function Parent({ parent }) {
-	if (!parent) return null;
-	const onChange = evt => {
-		store.put({
-			parent: {
-				name: evt.target.value
-			}
-		});
-	};
-	return (
-		<div>
-			<h2>I'm {parent.name}</h2>
-			<p>My child is {parent.child.name}</p>
-			<p>
-				Change my name: <input type="text" onChange={onChange} />
-			</p>
-		</div>
-	);
-}
-
-function Child({ child }) {
-	if (!child) return null;
-	const onChange = evt => {
-		store.put({
-			child: {
-				name: evt.target.value
-			}
-		});
-	};
-	return (
-		<div>
-			<h2>I'm {child.name}</h2>
-			<p>My parent is {child.parent.name}</p>
-			<p>
-				Change my name: <input type="text" onChange={onChange} />
-			</p>
-		</div>
-	);
-}
-
-function Sample({ data }) {
-	return (
-		<div>
-			<Parent parent={data.parent} />
-			<Child child={data.child} />
-		</div>
-	);
-}
-
+```js
 const parent = {
 	name: "Giap"
 };
+
 const child = {
 	name: "Vinh"
 };
@@ -84,10 +33,40 @@ store.put({
 	child
 });
 
-export default connect({
-	parent: { name: 1, child: { name: 1 } },
-	child: { name: 1, parent: { name: 1 } }
-})(Sample);
+//Watch parent
+store.watch({ 
+	parent: {
+		name: 1,
+		child: {
+			name: 1
+		}
+	}
+}, val => console.log(val));
+
+//Watch child
+store.watch({ 
+	child: {
+		name: 1,
+		parent: {
+			name: 1
+		}
+	}
+}, val => console.log(val));
+
+//Update parent name which notify both watches
+store.put({
+	parent: {
+		name: evt.target.value
+	}
+});
+
+//Update child name which notify both watches
+store.put({
+	child: {
+		name: evt.target.value
+	}
+});
+
 ```
 
 <img src="images/nxql-demo2.gif">
