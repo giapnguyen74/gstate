@@ -12,5 +12,11 @@ Read state out nqlx is quite different. Actually you don't read a state but it's
 2. Read states are derivations from application state which query as a tree 
 3. Read states re-computed and notified if contains nodes changed after a mutation.
 
+Input a graph into nxql
+![Input a graph into nxql](images/nxql1.png) 
 
-!(Input a graph into nxql)[images/nxql1.png] !(nxql merge input graph with current state and notify read state which contains effect nodes)[images/nxql2.png] !(read states recomputed)[images/nxql3.png]
+nxql merge input graph with current state and notify read state which contains effect nodes
+![nxql merge input graph with current state and notify read state which contains effect nodes](images/nxql2.png) 
+
+read states updated
+![read states recomputed](images/nxql3.png)
