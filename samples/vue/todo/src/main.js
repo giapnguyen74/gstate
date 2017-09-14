@@ -1,7 +1,7 @@
 import Vue from "vue";
 import App from "./App.vue";
 
-Vue.use(require("../../../../lib/vue"), {
+Vue.use(require("./vue"), {
 	data: {
 		todos: [],
 		newTodo: ""
