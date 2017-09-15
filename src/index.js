@@ -3,10 +3,22 @@ const { is_object, unique_id, new_state } = require("./util");
 const { put_object_value } = require("./put");
 const { get_object_query } = require("./get");
 
+function path(state, paths) {
+	for (let i = 0; i < paths.length; i++) {
+		state;
+	}
+}
+
 class Database {
 	constructor() {
 		this.reset();
 		this._tracker = new WeakMap();
+	}
+
+	path(paths) {
+		if (typeof paths == "string") {
+			paths = paths.split(".");
+		}
 	}
 
 	reset() {
@@ -20,7 +32,11 @@ class Database {
 	}
 
 	put(val) {
-		const info = { tracker: unique_id(), db: this };
+		const info = {
+			tracker: unique_id(),
+			db: this,
+			root: this._internal_data
+		};
 		if (!is_object(val)) {
 			throw new Error("Value should be an pure object");
 		}

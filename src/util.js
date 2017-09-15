@@ -25,9 +25,29 @@ function new_state() {
 	return state;
 }
 
+function is_state_object(state) {
+	return (
+		typeof state === "object" &&
+		typeof state._ === "object" &&
+		!Array.isArray(state)
+	);
+}
+
+function to_path(paths) {
+	if (Array.isArray(paths)) {
+		return paths;
+	} else if (typeof paths == "string") {
+		return paths.split(".");
+	} else {
+		throw new Error("Paths should be array or string");
+	}
+}
+
 module.exports = {
 	is_primitive_value,
+	is_state_object,
 	is_object,
 	unique_id,
-	new_state
+	new_state,
+	to_path
 };
