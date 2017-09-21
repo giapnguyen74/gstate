@@ -1,14 +1,10 @@
 import React from "react";
-import { connect, store } from "../store.js";
+import { connect, update_parent_name, update_child_name } from "../store.js";
 
 function Parent({ parent }) {
 	if (!parent) return null;
 	const onChange = evt => {
-		store.put({
-			parent: {
-				name: evt.target.value
-			}
-		});
+		update_parent_name(evt.target.value);
 	};
 	return (
 		<div>
@@ -24,11 +20,7 @@ function Parent({ parent }) {
 function Child({ child }) {
 	if (!child) return null;
 	const onChange = evt => {
-		store.put({
-			child: {
-				name: evt.target.value
-			}
-		});
+		update_child_name(evt.target.value);
 	};
 	return (
 		<div>
@@ -49,20 +41,6 @@ function Sample({ data }) {
 		</div>
 	);
 }
-
-const parent = {
-	name: "Giap"
-};
-const child = {
-	name: "Vinh"
-};
-
-parent.child = child;
-child.parent = parent;
-store.put({
-	parent,
-	child
-});
 
 export default connect({
 	parent: { name: 1, child: { name: 1 } },

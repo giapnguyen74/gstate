@@ -1,88 +1,119 @@
-const { is_primitive_value, is_object } = require("./util");
+const { get_tag } = require("./util");
 
-function get_all_primitive_prop(state, info) {
-	const result = {};
+function handle_map_op(node, op, watcher, context) {
+	let nodes = [];
+	const props = Object.keys(node);
+	const query = op._;
 
-	Object.keys(state).forEach(k => {
-		if (is_primitive_value(state[k])) {
-			result[k] = state[k];
-			add_prop_watcher(state, k, info);
+	for (let i = 0; i < props.length; i++) {
+		const tag = get_tag(node[props[i]]);
+		if (
+			tag == "[object Deleted]" ||
+			tag == "[object Null]" ||
+			tag == "[object Undefined]"
+		)
+			continue;
+
+		if (tag != "[object Object]" && tag != "[object Array]") {
+			nodes.push(get_node_prop(node, props[i], watcher, context));
+		} else {
+			nodes.push(get_query(node[props[i]], query, watcher, context));
+		}
+	}
+	if (typeof context.state.onMapCallback == "function") {
+		nodes = context.state.onMapCallback(op, nodes) || nodes;
+	}
+
+	return nodes;
+}
+
+function get_node_prop(node, prop, watcher, context) {
+	const meta = node._;
+
+	if (watcher) {
+		meta.watchers[prop] = meta.watchers[prop] || new Set();
+		meta.watchers[prop].add(watcher);
+		context.log("Add watcher:", watcher, "for prop:", prop);
+	}
+
+	meta.readers.forEach(reader => {
+		const fn = context._readers[reader];
+		if (typeof fn != "function") {
+			meta.readers.delete(reader);
+		} else {
+			fn(node, prop);
 		}
 	});
-	return result;
+
+	return node[prop];
 }
 
-function get_prop_array_item(item, query, info) {
-	if (is_primitive_value(item)) {
-		return item;
-	} else if (Array.isArray(query)) {
-		// query item as array
-		return get_prop_array_value(item, query[0], info);
-	} else if (is_object(query)) {
-		//query item as object
-		return get_object_query(item, query, info);
-	} else if (query === undefined || query === 1) {
-		// query all prop as long as value is primitive
-		return get_all_primitive_prop(item, info);
-	} else {
-		throw new Error("Invalid query: " + query);
-	}
-}
-
-function get_prop_array_value(state, query, info) {
-	let result = [];
-	if (is_object(state)) {
-		result = Object.keys(state).map(k =>
-			get_prop_array_item(state[k], query, info)
-		);
-	} else if (Array.isArray(state)) {
-		result = state.map(item => get_prop_array_item(item, query, info));
-	} else if (is_primitive_value(state)) {
-		result = state;
-	} else {
-		throw new Error("Invalid state: " + state);
-	}
-	return result;
-}
-
-function add_prop_watcher(state, prop, info) {
-	if (info.watcher) {
-		state._[prop] = state._[prop] || new Set();
-		state._[prop].add(info.watcher);
-		if (info.debug) {
-			console.log("Add watcher:", info.watcher, "for prop:", prop);
-		}
-	}
-}
-
-function get_object_query(state, query, info) {
+function get_all_node_props(node, watcher, context) {
 	const result = {};
-	const props = Object.keys(query);
+	const props = Object.keys(node);
 	for (let i = 0; i < props.length; i++) {
 		const prop = props[i];
-		const queryProp = query[prop];
-		const stateProp = state[prop];
+		const tag = get_tag(node[prop]);
 
-		// if stateProp is primitive, copy stateProp to result ignore query.
-		if (is_primitive_value(stateProp)) {
-			result[prop] = stateProp;
-		} else if (Array.isArray(queryProp)) {
-			// query state as array
-			result[prop] = get_prop_array_value(stateProp, queryProp[0], info);
-		} else if (is_object(queryProp)) {
-			// query state as object
-			result[prop] = get_object_query(stateProp, queryProp, info);
-		} else if (queryProp === 1) {
-			// query all prop as long as value is primitive
-			result[prop] = get_all_primitive_prop(stateProp, info);
-		} else {
-			throw new Error("Invalid query: " + queryProp);
+		if (
+			tag != "[object Deleted]" &&
+			tag != "[object Object]" &&
+			tag != "[object Array]"
+		) {
+			result[prop] = get_node_prop(node, prop, watcher, context);
 		}
-		add_prop_watcher(state, prop, info);
+	}
+	return result;
+}
+
+function get_query(node, query, watcher, context) {
+	const result = {};
+
+	const props = Object.keys(query);
+	if (query == 1 || props.length == 0) {
+		return get_all_node_props(node, watcher, context);
+	}
+
+	for (let i = 0; i < props.length; i++) {
+		const prop = props[i];
+
+		const tag = get_tag(node[prop]);
+
+		//Return value if  node[prop] is primitive
+		if (tag == "[object Deleted]") continue;
+
+		if (tag != "[object Object]" && tag != "[object Array]") {
+			result[prop] = get_node_prop(node, prop, watcher, context);
+		} else {
+			const subQuery = query[prop];
+			if (subQuery == 1) {
+				result[prop] = get_all_node_props(node[prop], watcher, context);
+			} else if (get_tag(subQuery) == "[object Object]") {
+				if (subQuery._) {
+					result[prop] = handle_map_op(
+						node[prop],
+						subQuery,
+						watcher,
+						context
+					);
+				} else {
+					result[prop] = get_query(
+						node[prop],
+						subQuery,
+						watcher,
+						context
+					);
+				}
+			} else {
+				throw new Error(
+					"Invalid query: " + JSON.stringify(subQuery, null, 2)
+				);
+			}
+		}
 	}
 	return result;
 }
 
 module.exports = {
-	get_object_query
+	get_query
 };

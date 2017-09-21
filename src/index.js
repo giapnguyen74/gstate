@@ -1,60 +1,103 @@
-const WeakMap = require("./WeakMap");
-const { is_object, unique_id, new_state } = require("./util");
-const { put_object_value } = require("./put");
-const { get_object_query } = require("./get");
+const { get_tag, unique_id } = require("./util");
+const { clone_obj } = require("./clone");
+const { merge_node, create_node, delete_path } = require("./merge");
+const { create_tracker } = require("./tracker");
+const { get_query } = require("./get");
 
-function path(state, paths) {
-	for (let i = 0; i < paths.length; i++) {
-		state;
+function to_path(key) {
+	const _key = Array.isArray(key) ? key : key.split(".");
+	if (_key.length < 1) {
+		throw new Error("Invalid key " + key);
 	}
+	return _key;
 }
 
-class Database {
-	constructor() {
-		this.reset();
-		this._tracker = new WeakMap();
+function get_path(obj, key) {
+	for (let i = 0; i < key.length; i++) {
+		const prop = key[i];
+		if (get_tag(obj[prop]) != "[object Object]") {
+			return obj[prop];
+		}
+		obj = obj[prop];
+	}
+	return obj;
+}
+
+function set_path(obj, key, value) {
+	if (key.length == 0) {
+		return value;
+	}
+	let _obj = obj;
+	for (let i = 0; i < key.length - 1; i++) {
+		const prop = key[i];
+		_obj[prop] = _obj[prop] || {};
+		_obj = _obj[prop];
+	}
+	_obj[key[key.length - 1]] = value;
+	return obj;
+}
+
+class Context {
+	constructor(state, key) {
+		this.key = key;
+		this.state = state;
+		this._rootNode = state._rootNode;
+		this._watchers = state._watchers;
+		this._readers = state._readers;
+
+		this._batch_tracker = undefined;
+
+		this.log = state.debug ? console.log : () => undefined;
 	}
 
-	path(paths) {
-		if (typeof paths == "string") {
-			paths = paths.split(".");
+	path(key) {
+		key = to_path(key);
+		return new Context(this.state, this.key.concat(key));
+	}
+
+	set(value) {
+		if (get_tag(value) != "[object Object]") {
+			throw new Error("Value should be an object");
+		}
+
+		const tracker = this._batch_tracker
+			? this._batch_tracker
+			: create_tracker();
+
+		value = clone_obj(this.key, value, tracker);
+		value = set_path({}, this.key, value);
+
+		merge_node(this._rootNode, value, this);
+		if (!this._batch_tracker) {
+			Object.keys(this._watchers).forEach(k => this._watchers[k].get());
 		}
 	}
 
-	reset() {
-		this._internal_data = new_state();
-		if (this._watchers) {
-			Object.keys(this._watchers).forEach(k => {
-				delete this._watchers[k];
-			});
-		}
-		this._watchers = {};
-	}
-
-	put(val) {
-		const info = {
-			tracker: unique_id(),
-			db: this,
-			root: this._internal_data
-		};
-		if (!is_object(val)) {
-			throw new Error("Value should be an pure object");
-		}
-
-		put_object_value(this._internal_data, val, info);
+	batch(fn) {
+		this._batch_tracker = create_tracker();
+		fn(this);
 		Object.keys(this._watchers).forEach(k => this._watchers[k].get());
+		this._batch_tracker = undefined;
 	}
 
 	get(query, watcher) {
-		const info = {
-			watcher,
-			debug: this.debug
-		};
+		query = set_path({}, this.key, query);
+		let res = get_query(this._rootNode, query, watcher, this);
 
-		if (!is_object(query)) {
-			throw new Error("Query should be an object");
+		setTimeout(() =>
+			Object.keys(this._readers).forEach(k => this._readers[k].notify())
+		);
+
+		return get_path(res, this.key) || {};
+	}
+
+	delete(key) {
+		key = to_path(key);
+		key = this.key.concat(key);
+		delete_path(this._rootNode, key, this);
+		if (!this._batch_tracker) {
+			Object.keys(this._watchers).forEach(k => this._watchers[k].get());
 		}
-		return get_object_query(this._internal_data, query, info);
 	}
 
 	watch(query, cb) {
@@ -78,6 +121,74 @@ class Database {
 			delete this._watchers[w];
 		};
 	}
+
+	reader(key, cb) {
+		const r = unique_id();
+		key = to_path(key);
+		const node = get_path(this._rootNode, this.key.concat(key));
+		if (!node || !node._) {
+			throw new Error("Reader should be added into a existed node");
+		}
+		node._.readers.add(r);
+
+		let props = [];
+
+		this._readers[r] = (node, prop) => {
+			props.push(prop);
+		};
+
+		this._readers[r].notify = () => {
+			if (props.length > 0) {
+				cb(node, props);
+			}
+			props = [];
+		};
+
+		return () => {
+			delete this._readers[r];
+		};
+	}
 }
 
-module.exports = Database;
+class GState {
+	constructor(options = {}) {
+		this._rootNode = create_node();
+		this._rootNode._.isRoot = true;
+		this._watchers = {};
+		this._readers = {};
+		this.onMapCallback = options.onMapCallback;
+		this.debug = options.debug;
+
+		this.rootContext = new Context(this, []);
+	}
+
+	path(key) {
+		return this.rootContext.path(key);
+	}
+
+	set(value) {
+		return this.rootContext.set(value);
+	}
+
+	get(query, watcher) {
+		return this.rootContext.get(query, watcher);
+	}
+
+	batch(fn) {
+		return this.rootContext.batch(fn);
+	}
+
+	reader(key, cb) {
+		return this.rootContext.reader(key, cb);
+	}
+
+	watch(query, cb) {
+		return this.rootContext.watch(query, cb);
+	}
+
+	delete(key) {
+		return this.rootContext.delete(key);
+	}
+}
+
+module.exports = GState;

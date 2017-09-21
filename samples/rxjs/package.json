@@ -1,0 +1,14 @@
+{
+  "name": "rxjs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
+  "license": "ISC",
+  "dependencies": {
+    "rx": "^4.1.0"
+  }
+}

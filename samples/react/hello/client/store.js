@@ -1,43 +1,39 @@
-const Database = require("../../../../lib");
-const store = new Database();
-import { Component, createElement } from "react";
+const connectHoc = require("./connect");
+const GState = require("../../../../lib");
+const store = new GState();
 
-function connect(query) {
-	return function(WrappedComponent) {
-		class Connect extends Component {
-			constructor(props, context) {
-				super(props, context);
-				this.state = { data: {} };
-			}
+const parent = {
+	name: "Giap"
+};
+const child = {
+	name: "Vinh"
+};
 
-			componentDidMount() {
-				this._watcher = store.watch(query, val => {
-					this.setState({ data: val });
-				});
-			}
+parent.child = child;
+child.parent = parent;
+store.set({
+	parent,
+	child
+});
 
-			componentWillUnmount() {
-				if (this._watcher) {
-					this._watcher();
-				}
-			}
-
-			render() {
-				return createElement(
-					WrappedComponent,
-					Object.assign({}, this.props, {
-						data: this.state.data,
-						store: store
-					})
-				);
-			}
+function update_parent_name(value) {
+	store.set({
+		parent: {
+			name: value
 		}
+	});
+}
 
-		return Connect;
-	};
+function update_child_name(value) {
+	store.set({
+		child: {
+			name: value
+		}
+	});
 }
 
 module.exports = {
-	connect,
-	store
+	update_parent_name,
+	update_child_name,
+	connect: connectHoc(store)
 };

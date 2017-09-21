@@ -1,30 +1,31 @@
-const Database = require("../lib");
-
-const db = new Database();
-
-test("watch#simple", async function() {
-	let step = 0;
-	db.watch(
+const GState = require("../src/index");
+test("watch#single", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = { a: "a" };
+	state.set(value);
+	state.watch(
 		{
 			a: 1
 		},
-		function(result) {
-			if (step == 0) {
-				expect(result).toEqual({ a: undefined });
-			} else {
-				expect(result).toEqual({ a: "a" });
-			}
+		result => {
+			calls++;
+			expect(result).toEqual(value);
 		}
 	);
-	step++;
-	db.put({ a: "a" });
+
+	value = { a: "b" };
+	state.set(value);
+
+	expect(calls).toBe(2);
 });
 
-test("watch#nested", async function() {
-	db.reset();
-
-	let step = 0;
-	db.watch(
+test("watch#nested", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = { a: "a" };
+	state.set(value);
+	state.watch(
 		{
 			a: {
 				b: {
@@ -32,80 +33,161 @@ test("watch#nested", async function() {
 				}
 			}
 		},
-		function(result) {
-			if (step == 0) {
-				expect(result).toEqual({ a: undefined });
-			} else if (step == 1) {
-				expect(result).toEqual({ a: { b: { c: "xxx" } } });
-			} else if (step == 2) {
-				throw new Error("Should not called");
-			} else if (step == 3) {
-				throw new Error("Should not called");
-			} else if (step == 4) {
-				expect(result).toEqual({ a: { b: "what" } });
-			}
+		result => {
+			calls++;
+			expect(result).toEqual(value);
 		}
 	);
 
-	step++;
-	db.put({
-		a: {
-			b: {
-				c: "xxx"
-			}
-		}
-	});
+	value = { a: "b" };
+	state.set(value);
 
-	step++;
-	db.put({ x: 1 });
+	value = { a: { b: "b" } };
+	state.set(value);
 
-	step++;
-	db.put({
-		a: {
-			b: {
-				d: "xxx"
-			}
-		}
-	});
+	value = { a: { b: { c: "c" } } };
+	state.set(value);
 
-	step++;
-	db.put({
-		a: {
-			b: "what"
-		}
-	});
+	//not reactive
+	value = { a: { b: { e: "e" } } };
+	state.set(value);
+
+	value = { x: "x" };
+	state.set(value);
+
+	expect(calls).toBe(4);
 });
-test("watch#recursive update", async function() {
-	db.reset();
-	let step = 0;
-	db.watch(
-		{
-			a: 1,
+
+test("watch#circular", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = {
+		manager: {
+			name: "Manager1"
+		},
+		staffs: {
+			a: {
+				name: "A"
+			},
 			b: {
-				c: 1
+				name: "B"
+			}
+		}
+	};
+
+	value.manager.staffs = value.staffs;
+	value.staffs.a.manager = value.manager;
+	value.staffs.b.manager = value.manager;
+	state.set(value);
+	state.watch(
+		{
+			manager: {
+				name: 1,
+				staffs: {
+					_: {
+						name: 1
+					}
+				}
+			},
+			staffs: {
+				_: {
+					name: 1,
+					manager: {
+						name: 1
+					}
+				}
 			}
 		},
-		function(result) {
-			if (step == 0) {
-				expect(result).toEqual({ a: undefined });
-			} else if (step == 1) {
-				expect(result).toEqual({ a: "a" });
-			} else if (step == 2) {
-				expect(result).toEqual({ a: "a", b: { c: "c" } });
-			} else if (step == 3) {
-				expect(result).toEqual({ a: "a", b: { c: "d" } });
-			}
+		result => {
+			calls++;
+			calls == 1 &&
+				expect(result).toEqual({
+					manager: {
+						name: "Manager1",
+						staffs: [
+							{
+								name: "A"
+							},
+							{
+								name: "B"
+							}
+						]
+					},
+					staffs: [
+						{
+							name: "A",
+							manager: {
+								name: "Manager1"
+							}
+						},
+						{
+							name: "B",
+							manager: {
+								name: "Manager1"
+							}
+						}
+					]
+				});
+
+			calls == 2 &&
+				expect(result).toEqual({
+					manager: {
+						name: "Manager2",
+						staffs: [
+							{
+								name: "A"
+							},
+							{
+								name: "B"
+							}
+						]
+					},
+					staffs: [
+						{
+							name: "A",
+							manager: {
+								name: "Manager2"
+							}
+						},
+						{
+							name: "B",
+							manager: {
+								name: "Manager2"
+							}
+						}
+					]
+				});
 		}
 	);
-	step++;
-	const val = { a: "a", c: "c" };
-	db.put(val);
 
-	step++;
-	val.b = val;
-	db.put(val);
+	value = {
+		manager: { name: "Manager2" }
+	};
+	state.set(value);
 
-	step++;
-	val.c = "d";
-	db.put(val);
+	expect(calls).toBe(2);
+});
+
+test("watch#unwatch", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = {
+		a: "a"
+	};
+	state.set(value);
+	const handler = state.watch(
+		{
+			a: 1
+		},
+		result => {
+			calls++;
+			expect(result).toEqual(value);
+		}
+	);
+
+	handler();
+	state.set({ a: "b" });
+	state.set({ a: "c" });
+
+	expect(calls).toBe(1);
 });
