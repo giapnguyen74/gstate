@@ -1,0 +1,50 @@
+<html>
+
+<head>
+	<script src="gstate.js"></script>
+	<script src="https://fb.me/react-0.14.8.min.js"></script>
+	<script src="https://fb.me/react-dom-0.14.8.min.js"></script>
+</head>
+
+<body>
+	<div id="content"></div>
+	<script>
+		var state = new GState();
+
+		setInterval(function () {
+			state.set({ time: new Date().toUTCString() })
+		}, 1000)
+
+		var h = React.createElement;
+		var HelloWorldBanner = React.createClass({
+			getInitialState() {
+				return {
+					data: null
+				};
+			},
+			componentDidMount() {
+				this._watcher = state.watch({ time: 1 }, val => {
+					this.setState({ data: val });
+				});
+			},
+
+			componentWillUnmount() {
+				if (this._watcher) {
+					this._watcher();
+				}
+			},
+
+			render: function () {
+				return (
+					h('div', null,
+						h('h1', null, 'Hello World'),
+						h("p", null, this.state.data && this.state.data.time)
+					)
+				)
+			}
+		});
+		ReactDOM.render(React.createElement(HelloWorldBanner), document.getElementById('content'))
+	</script>
+</body>
+
+</html>

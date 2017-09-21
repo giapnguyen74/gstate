@@ -14,8 +14,7 @@
 		"type": "git",
 		"url": "git+https://github.com/giapnguyen74/gstate.git"
 	},
-	"author":
-		"“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
+	"author": "“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/giapnguyen74/gstate/issues"
@@ -27,7 +26,8 @@
 		"babel-preset-es2015": "^6.24.1",
 		"eslint": "^4.6.1",
 		"jest": "^21.0.2",
-		"sift": "^5.0.0"
+		"sift": "^5.0.0",
+		"webpack": "^3.6.0"
 	},
 	"jest": {
 		"testEnvironment": "jsdom"
