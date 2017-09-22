@@ -1,8 +1,4 @@
-const { get_tag } = require("./util");
-
-function is_ref_value(value) {
-	return value && value._ == "ref";
-}
+const { get_tag, tags } = require("./util");
 
 function create_node(isArrayNode) {
 	const node = {};
@@ -17,7 +13,7 @@ function create_node(isArrayNode) {
 	return node;
 }
 
-function notify_node_prop_changed(node, prop, context) {
+function notify_node_prop(node, prop, context) {
 	const watchers = node._.watchers;
 	watchers[prop] = watchers[prop] || new Set();
 
@@ -27,16 +23,9 @@ function notify_node_prop_changed(node, prop, context) {
 			watchers[prop].delete(w);
 		} else {
 			context.log("Call watcher:", w, "for prop:", prop);
-
 			fn(node[prop]);
 		}
 	});
-}
-
-function commit_node_prop(node, prop, value, context) {
-	if (node[prop] === value) return;
-	node[prop] = value;
-	notify_node_prop_changed(node, prop, context);
 }
 
 function get_node_by_path(path, context) {
@@ -44,9 +33,8 @@ function get_node_by_path(path, context) {
 
 	for (let i = 0; i < path.length; i++) {
 		const key = path[i];
-		if (get_tag(node[key]) != "[object Object]") {
-			const child = create_node();
-			commit_node_prop(node, key, child, context);
+		if (get_tag(node[key]) != tags.OBJECT) {
+			commit_node_prop(node, key, create_node(), context);
 		}
 		node = node[key];
 	}
@@ -54,33 +42,65 @@ function get_node_by_path(path, context) {
 	return node;
 }
 
-function merge_node_prop(node, prop, value, context) {
-	if (is_ref_value(value)) {
-		const child = get_node_by_path(value.path, context);
-		return commit_node_prop(node, prop, child, context);
+function commit_node_prop(node, prop, value, context) {
+	if (node[prop] === value) return;
+	if (get_tag(value) == tags.UNDEFINED) {
+		notify_node_prop(node, "_", context);
+		notify_node_prop(node, prop, context);
+		delete node[prop];
+		return;
 	}
 
-	const valueTag = get_tag(value);
-	if (valueTag == "[object Object]") {
-		let child = node[prop];
-		if (get_tag(child) != "[object Object]" || child._.isArray) {
-			child = create_node();
-			commit_node_prop(node, prop, child, context);
-		}
-		merge_node(child, value, context);
-	} else if (valueTag == "[object Array]") {
-		const child = create_node(true);
-		commit_node_prop(node, prop, child, context);
-		for (let i = 0; i < value.length; i++) {
-			merge_node_prop(child, i, value[i], context);
-		}
-	} else {
-		commit_node_prop(node, prop, value, context);
+	if (get_tag(node[prop] == tags.UNDEFINED)) {
+		notify_node_prop(node, "_", context);
 	}
+	notify_node_prop(node, prop, context);
+	node[prop] = value;
 }
 
 /**
- * Merge node object with value object
+ * Assume node is object and value is any, assign value into node[prop]
+ * @param {*} node 
+ * @param {*} prop 
+ * @param {*} value 
+ * @param {*} context 
+ */
+function assign_node_prop(node, prop, value, context) {
+	const valueTag = get_tag(value);
+	if (valueTag == tags.REF) {
+		commit_node_prop(
+			node,
+			prop,
+			get_node_by_path(value.path, context),
+			context
+		);
+		return;
+	}
+
+	if (valueTag == tags.OBJECT) {
+		let child = node[prop];
+		if (get_tag(node[prop]) != tags.OBJECT || node[prop]._.isArray) {
+			child = create_node();
+		}
+		commit_node_prop(node, prop, child, context);
+		merge_node(child, value, context);
+		return;
+	}
+
+	if (valueTag == tags.ARRAY) {
+		let child = create_node(true);
+		commit_node_prop(node, prop, child, context);
+		for (let i = 0; i < value.length; i++) {
+			assign_node_prop(child, i, value[i], context);
+		}
+		return;
+	}
+
+	commit_node_prop(node, prop, value, context);
+}
+
+/**
+ * Assume node and value are object, merge value into object
  * @param {*} node 
  * @param {*} value 
  */
@@ -88,7 +108,7 @@ function merge_node(node, value, context) {
 	const props = Object.keys(value);
 	for (let i = 0; i < props.length; i++) {
 		const prop = props[i];
-		merge_node_prop(node, prop, value[prop], context);
+		assign_node_prop(node, prop, value[prop], context);
 	}
 }
 
@@ -97,7 +117,7 @@ function delete_path(node, path, context) {
 
 	for (let i = 0; i < path.length - 1; i++) {
 		prop = path[i];
-		if (get_tag(node[prop]) != "[object Object]") {
+		if (get_tag(node[prop]) != tags.OBJECT) {
 			// Already delete node
 			return;
 		}
@@ -105,10 +125,9 @@ function delete_path(node, path, context) {
 	}
 
 	prop = path[path.length - 1];
-	if (get_tag(node[prop]) != "[object Object]") {
+	if (get_tag(node[prop]) != tags.OBJECT) {
 		//delete primitive value
-		delete node[prop];
-		notify_node_prop_changed(node, prop, context);
+		commit_node_prop(node, prop, undefined, context);
 	} else {
 		node = node[prop];
 		if (node._.isRoot) {
@@ -117,8 +136,7 @@ function delete_path(node, path, context) {
 		}
 		const props = Object.keys(node);
 		for (let i = 0; i < props.length; i++) {
-			delete node[props[i]];
-			notify_node_prop_changed(node, props[i], context);
+			commit_node_prop(node, props[i], undefined, context);
 		}
 		node._.deleted = true;
 	}

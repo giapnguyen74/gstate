@@ -171,3 +171,71 @@ test("get#empty query", function() {
 		}
 	});
 });
+
+test("get#complex circular", function() {
+	const state = new GState();
+
+	let value = {
+		manager: {
+			name: "Manager1"
+		},
+		staffs: {
+			a: {
+				name: "A"
+			},
+			b: {
+				name: "B"
+			}
+		}
+	};
+
+	value.manager.staffs = value.staffs;
+	value.staffs.a.manager = value.manager;
+	value.staffs.b.manager = value.manager;
+	state.set(value);
+	const res = state.get({
+		manager: {
+			name: 1,
+			staffs: {
+				_: {
+					name: 1
+				}
+			}
+		},
+		staffs: {
+			_: {
+				name: 1,
+				manager: {
+					name: 1
+				}
+			}
+		}
+	});
+	expect(res).toEqual({
+		manager: {
+			name: "Manager1",
+			staffs: [
+				{
+					name: "A"
+				},
+				{
+					name: "B"
+				}
+			]
+		},
+		staffs: [
+			{
+				name: "A",
+				manager: {
+					name: "Manager1"
+				}
+			},
+			{
+				name: "B",
+				manager: {
+					name: "Manager1"
+				}
+			}
+		]
+	});
+});

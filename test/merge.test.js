@@ -302,3 +302,34 @@ test("merge#deep ref", function() {
 		}
 	});
 });
+
+test("merge#complex circular", function() {
+	const state = new GState();
+
+	let value = {
+		manager: {
+			name: "Manager1"
+		},
+		staffs: {
+			a: {
+				name: "A"
+			},
+			b: {
+				name: "B"
+			}
+		}
+	};
+
+	value.manager.staffs = value.staffs;
+	value.staffs.a.manager = value.manager;
+	value.staffs.b.manager = value.manager;
+	state.set(value);
+
+	expect(state._rootNode.manager.name).toBe("Manager1");
+	expect(state._rootNode.staffs.a.name).toBe("A");
+	expect(state._rootNode.staffs.b.name).toBe("B");
+	expect(state._rootNode.manager.staffs.a).toBe(state._rootNode.staffs.a);
+	expect(state._rootNode.manager.staffs.b).toBe(state._rootNode.staffs.b);
+	expect(state._rootNode.staffs.a.manager).toBe(state._rootNode.manager);
+	expect(state._rootNode.staffs.b.manager).toBe(state._rootNode.manager);
+});

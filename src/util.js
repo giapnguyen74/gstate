@@ -8,15 +8,32 @@ function unique_id() {
 function get_tag(value) {
 	const tag = Object.prototype.toString.call(value);
 
-	if (tag == "[object Object]") {
+	if (tag == tags.OBJECT) {
 		if (value._ && value._.deleted) {
-			return "[object Deleted]";
+			return tags.DELETED;
+		}
+		if (value._ == "ref") {
+			return tags.REF;
 		}
 	}
 	return tag;
 }
 
+const tags = {
+	OBJECT: "[object Object]",
+	ARRAY: "[object Array]",
+	DELETED: "[object Deleted]",
+	DATE: "[object Date]",
+	NUMBER: "[object Number]",
+	BOOLEAN: "[object Boolean]",
+	NULL: "[object Null]",
+	UNDEFINED: "[object Undefined]",
+	STRING: "[object String]",
+	REF: "[object Ref]"
+};
+
 module.exports = {
 	unique_id,
-	get_tag
+	get_tag,
+	tags
 };

@@ -20,6 +20,42 @@ test("watch#single", function() {
 	expect(calls).toBe(2);
 });
 
+test("watch#map primitive", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = {
+		a: {
+			a1: "a1"
+		}
+	};
+	state.set(value);
+
+	state.watch(
+		{
+			a: {
+				_: 1
+			}
+		},
+		result => {
+			calls++;
+			calls == 1 &&
+				expect(result).toEqual({
+					a: ["a1"]
+				});
+			calls == 2 &&
+				expect(result).toEqual({
+					a: ["a1", "a2"]
+				});
+		}
+	);
+	value = {
+		a: {
+			a2: "a2"
+		}
+	};
+	state.set(value);
+});
+
 test("watch#nested", function() {
 	const state = new GState();
 	let calls = 0;

@@ -1,0 +1,27 @@
+{
+	"name": "socketio",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "webpack && node index.js"
+	},
+	"author":
+		"“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
+	"license": "ISC",
+	"dependencies": {
+		"express": "^4.15.4",
+		"socket.io": "^2.0.3"
+	},
+	"devDependencies": {
+		"babel-core": "^6.26.0",
+		"babel-loader": "^7.1.2",
+		"babel-preset-es2015": "^6.24.1",
+		"babel-preset-react": "^6.24.1",
+		"html-webpack-plugin": "^2.30.1",
+		"react": "^15.6.1",
+		"react-dom": "^15.6.1",
+		"webpack": "^3.5.6"
+	}
+}
