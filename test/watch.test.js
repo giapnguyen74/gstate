@@ -227,3 +227,72 @@ test("watch#unwatch", function() {
 
 	expect(calls).toBe(1);
 });
+
+test("watch#chain of watches", function() {
+	const state = new GState();
+	let calls = 0;
+	let value;
+	state.watch(
+		{
+			a: {
+				b: {
+					c: {
+						d: 1
+					}
+				}
+			}
+		},
+		result => {
+			calls++;
+			calls == 1 && expect(result).toEqual({ a: undefined });
+			calls == 2 && expect(result).toEqual({ a: "a" });
+			calls == 3 &&
+				expect(result).toEqual({ a: { b: { c: { d: "d" } } } });
+			calls == 4 && expect(result).toEqual({ a: { b: "b" } });
+		}
+	);
+
+	state.set({ a: "a" });
+	state.set({ a: { b: { c: { d: "d" } } } });
+	state.set({ a: { b: "b" } });
+
+	expect(calls).toBe(4);
+});
+
+test("watch#chain of watches of map operation", function() {
+	const state = new GState();
+	let calls = 0;
+	let value;
+	state.watch(
+		{
+			a: {
+				b: {
+					_: {
+						c: {
+							d: 1
+						}
+					}
+				}
+			}
+		},
+		result => {
+			calls++;
+			calls == 1 && expect(result).toEqual({ a: undefined });
+			calls == 2 && expect(result).toEqual({ a: "a" });
+			calls == 3 &&
+				expect(result).toEqual({
+					a: { b: [{ c: { d: "d" } }, { c: { d: "d1" } }] }
+				});
+			calls == 4 &&
+				expect(result).toEqual({
+					a: { b: ["c1", { c: { d: "d1" } }] }
+				});
+		}
+	);
+
+	state.set({ a: "a" });
+	state.set({ a: { b: { c1: { c: { d: "d" } }, c2: { c: { d: "d1" } } } } });
+	state.set({ a: { b: { c1: "c1" } } });
+
+	expect(calls).toBe(4);
+});

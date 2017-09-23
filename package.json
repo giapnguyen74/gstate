@@ -1,7 +1,7 @@
 {
 	"name": "gstate",
 	"version": "0.0.1",
-	"description": "Graph based state management",
+	"description": "Agnostic graph based state management",
 	"main": "lib/index.js",
 	"directories": {
 		"test": "test"
@@ -14,7 +14,8 @@
 		"type": "git",
 		"url": "git+https://github.com/giapnguyen74/gstate.git"
 	},
-	"author": "“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
+	"author":
+		"“Giap <“sorite2003@gmail.com”> (“https://www.linkedin.com/in/giapnh”)",
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/giapnguyen74/gstate/issues"

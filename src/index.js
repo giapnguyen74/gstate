@@ -82,7 +82,7 @@ class Context {
 
 	get(query, watcher) {
 		query = set_path({}, this.key, query);
-		let res = get_query(this._rootNode, query, watcher, this);
+		let res = get_query(this._rootNode, null, query, watcher, this);
 
 		setTimeout(() =>
 			Object.keys(this._readers).forEach(k => this._readers[k].notify())

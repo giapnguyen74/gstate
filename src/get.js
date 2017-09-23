@@ -19,7 +19,7 @@ function handle_map_op(node, op, watcher, context) {
 		if (propTag != tags.OBJECT) {
 			nodes.push(get_node_prop(node, prop, watcher, context));
 		} else {
-			nodes.push(get_query(node[prop], query, watcher, context));
+			nodes.push(get_query(node, prop, query, watcher, context));
 		}
 	}
 	watch_add_remove_prop(node, watcher, context);
@@ -98,7 +98,7 @@ function get_query_node_prop(node, prop, query, watcher, context) {
 		return get_node_prop(node, prop, watcher, context);
 	}
 
-	return get_query(node[prop], query, watcher, context);
+	return get_query(node, prop, query, watcher, context);
 }
 
 /**
@@ -108,7 +108,10 @@ function get_query_node_prop(node, prop, query, watcher, context) {
  * @param {*} watcher 
  * @param {*} context 
  */
-function get_query(node, query, watcher, context) {
+function get_query(node, prop, query, watcher, context) {
+	if (prop != null) {
+		node = get_node_prop(node, prop, watcher, context);
+	}
 	const result = {};
 
 	const queryTag = get_tag(query);
