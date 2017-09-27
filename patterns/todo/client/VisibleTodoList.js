@@ -22,6 +22,7 @@ const TodoListWithState = gstate(
 		filter: 1
 	},
 	(props, data) => {
+		data = data || {};
 		return (
 			<TodoList
 				todos={getVisibleTodos(data.todos, data.filter)}

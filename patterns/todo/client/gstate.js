@@ -8,6 +8,12 @@ const gstate = (query, renderer) => {
 				data: undefined,
 				locals: {}
 			};
+
+			if (!props.state) {
+				throw new Error(
+					"Could not find state in props of gstate component. Please explicitly pass state as a prop to gstate component."
+				);
+			}
 		}
 
 		componentDidMount() {
