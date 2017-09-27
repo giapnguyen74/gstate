@@ -7,10 +7,7 @@ const FilterLink = gstate(
 	{
 		filter: 1
 	},
-	(props, data) => {
-		data = data || {
-			active: false
-		};
+	(props, data = { active: false }) => {
 		return (
 			<Link
 				active={props.filter === data.filter}
