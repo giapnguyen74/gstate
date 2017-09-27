@@ -1,4 +1,4 @@
-const { get_tag, unique_id } = require("./util");
+const { get_tag, unique_id, tags } = require("./util");
 const { clone_obj } = require("./clone");
 const { merge_node, create_node, delete_path } = require("./merge");
 const { create_tracker } = require("./tracker");
@@ -56,7 +56,7 @@ class Context {
 	}
 
 	set(value) {
-		if (get_tag(value) != "[object Object]") {
+		if (get_tag(value) != tags.OBJECT) {
 			throw new Error("Value should be an object");
 		}
 
@@ -81,14 +81,26 @@ class Context {
 	}
 
 	get(query, watcher) {
-		query = set_path({}, this.key, query);
+		let path = this.key;
+
+		// query is a path
+		const queryTag = get_tag(query);
+		if (queryTag == tags.STRING || queryTag == tags.ARRAY) {
+			path = path.concat(to_path(query));
+			query = set_path({}, path, 1);
+		} else if (query == tags.OBJECT) {
+			query = set_path({}, path, query);
+		} else {
+			throw new Error("Query should be string, array or object.");
+		}
+
 		let res = get_query(this._rootNode, null, query, watcher, this);
 
 		setTimeout(() =>
 			Object.keys(this._readers).forEach(k => this._readers[k].notify())
 		);
 
-		return get_path(res, this.key) || {};
+		return get_path(res, path);
 	}
 
 	delete(key) {
