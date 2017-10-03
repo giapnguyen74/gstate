@@ -3,6 +3,7 @@ const { clone_obj } = require("./clone");
 const { merge_node, create_node, delete_path } = require("./merge");
 const { create_tracker } = require("./tracker");
 const { get_query } = require("./get");
+const op = require("./op");
 
 function to_path(key) {
 	const _key = Array.isArray(key) ? key : key.split(".");
@@ -25,7 +26,7 @@ function get_path(obj, key) {
 
 function set_path(obj, key, value) {
 	if (key.length == 0) {
-		return value;
+		return Object.assign(obj, value); //value has high priority
 	}
 	let _obj = obj;
 	for (let i = 0; i < key.length - 1; i++) {
@@ -48,6 +49,7 @@ class Context {
 		this._batch_tracker = undefined;
 
 		this.log = state.debug ? console.log : () => undefined;
+		this.op = op;
 	}
 
 	path(key) {
@@ -64,8 +66,18 @@ class Context {
 			? this._batch_tracker
 			: create_tracker();
 
+		//support root value
+		const rootVal = value["#"];
+		let rootObj = {};
+		if (rootVal) {
+			if (get_tag(rootVal) != tags.OBJECT) {
+				throw new Error("Root value should be an object");
+			}
+			rootObj = clone_obj([], rootVal, tracker);
+		}
+
 		value = clone_obj(this.key, value, tracker);
-		value = set_path({}, this.key, value);
+		value = set_path(rootObj, this.key, value);
 
 		merge_node(this._rootNode, value, this);
 		if (!this._batch_tracker) {
@@ -170,7 +182,7 @@ class GState {
 		this._readers = {};
 		this.onMapCallback = options.onMapCallback;
 		this.debug = options.debug;
-
+		this.op = op;
 		this.rootContext = new Context(this, []);
 	}
 

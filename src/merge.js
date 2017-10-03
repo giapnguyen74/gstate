@@ -74,6 +74,7 @@ function assign_node_prop(node, prop, value, context) {
 			get_node_by_path(value.path, context),
 			context
 		);
+
 		return;
 	}
 

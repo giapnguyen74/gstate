@@ -88,6 +88,10 @@ function get_all_node_props(node, watcher, context) {
  * @param {*} context 
  */
 function get_query_node_prop(node, prop, query, watcher, context) {
+	if (prop == "#") {
+		return get_query(context._rootNode, null, query, watcher, context);
+	}
+
 	const propTag = get_tag(node[prop]);
 
 	if (propTag == tags.DELETED) {
