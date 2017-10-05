@@ -213,6 +213,15 @@ class GState {
 	delete(key) {
 		return this.rootContext.delete(key);
 	}
+
+	save() {
+		const tracker = create_tracker();
+		return clone_obj([], this._rootNode, tracker);
+	}
+
+	load(value) {
+		return merge_node(this._rootNode, value, this.rootContext);
+	}
 }
 
 module.exports = GState;

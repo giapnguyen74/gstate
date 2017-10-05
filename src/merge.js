@@ -8,7 +8,8 @@ function create_node(isArrayNode) {
 			watchers: {},
 			readers: new Set()
 		},
-		writable: true
+		writable: true,
+		enumerable: false
 	});
 	return node;
 }
