@@ -72,7 +72,7 @@ function calc_patches_object(context, patches, path, value, tracker) {
 function calc_patches_any(context, patches, path, value, tracker) {
 	const valueType = value_type(value);
 	if (valueType == ValueTypes.OBJECT) {
-		if (value["_"]) {
+		if (value.propertyIsEnumerable("_")) {
 			if (value["_"] == "$ref") {
 				const refPath = to_path(context.key, value.path);
 				return patches.push([path, [PatchTypes.REFERENCE, refPath]]);

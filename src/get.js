@@ -93,7 +93,7 @@ function notify_watch_callback(context, node, query, options) {
 	if (typeof watcherFn != "function") return;
 	watcherFn.watch_callbacks = watcherFn.watch_callbacks || new Set();
 	if (watcherFn.watch_callbacks.has(cb)) return;
-	setTimeout(() => cb(node, query, options), 0);
+	setTimeout(() => cb(query, options), 0);
 	watcherFn.watch_callbacks.add(cb);
 }
 
