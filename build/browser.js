@@ -1,1 +1,0 @@
-window["GState"] = require("../lib");

@@ -296,3 +296,138 @@ test("watch#chain of watches of map operation", function() {
 
 	expect(calls).toBe(4);
 });
+
+test("watch#single_path", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = { a: "a" };
+	state.set(value);
+	state.watch("a", result => {
+		calls++;
+		calls == 1 && expect(result).toEqual("a");
+		calls == 2 && expect(result).toEqual("b");
+	});
+
+	value = { a: "b" };
+	state.set(value);
+
+	expect(calls).toBe(2);
+});
+
+test("watch#path object", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = {
+		a: {
+			a1: "a1"
+		}
+	};
+	state.set(value);
+
+	state.watch("a", result => {
+		calls++;
+		calls == 1 && expect(result).toEqual({ a1: "a1" });
+		calls == 2 && expect(result).toEqual({ a1: "a1", a2: "a2" });
+	});
+	value = {
+		a: {
+			a2: "a2"
+		}
+	};
+	state.set(value);
+});
+
+test("watch#key", function() {
+	const state = new GState();
+	let calls = 0;
+	let value = {
+		a: [{ a: 1 }, { a: 2 }]
+	};
+	state.set(value);
+
+	state.watch(
+		{
+			a: {
+				_: "$key"
+			}
+		},
+		result => {
+			calls++;
+			calls == 1 && expect(result).toEqual({ a: ["0", "1"] });
+			calls == 2 && expect(result).toEqual({ a: ["1"] });
+		}
+	);
+
+	state.delete("a.0");
+});
+
+test("watch#key ref", function() {
+	const state = new GState({});
+	let calls = 0;
+
+	let value = {
+		a: [{ a: 1 }, { a: 2 }]
+	};
+	value.a0 = value.a[0];
+	value.a1 = value.a[1];
+	state.set(value);
+
+	state.watch(
+		{
+			a: {
+				_: "$key"
+			}
+		},
+		result => {
+			calls++;
+			calls == 1 && expect(result).toEqual({ a: ["0", "1"] });
+			calls == 2 && expect(result).toEqual({ a: ["1"] });
+		}
+	);
+
+	state.delete("a0");
+});
+
+test("onWatchCallBack", function(done) {
+	const state = new GState();
+
+	let calls = 0;
+	let value = { a: "a" };
+	state.set(value);
+	state.watch(
+		{
+			a: {
+				b: {
+					c: 1
+				}
+			}
+		},
+		result => {
+			calls++;
+			expect(result).toEqual(value);
+		}
+	);
+
+	value = { a: "b" };
+	state.set(value);
+
+	value = { a: { b: "b" } };
+	state.set(value);
+
+	state.onWatchCallback("a", (node, query, options) => {
+		expect(query).toEqual({ b: { c: 1 } });
+		done();
+	});
+
+	value = { a: { b: { c: "c" } } };
+	state.set(value);
+
+	//not reactive
+	value = { a: { b: { e: "e" } } };
+	state.set(value);
+
+	value = { x: "x" };
+	state.set(value);
+
+	expect(calls).toBe(4);
+});

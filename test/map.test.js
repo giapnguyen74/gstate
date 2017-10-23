@@ -87,3 +87,34 @@ test("onMapCallback#sift object", function() {
 		group: [{ age: 30, name: "a2" }, { age: 45, name: "a3" }]
 	});
 });
+
+test("map#$key", function() {
+	const state = new GState();
+
+	state.set({
+		group: {
+			person1: {
+				name: "a1",
+				age: 20
+			},
+			person2: {
+				name: "a2",
+				age: 30
+			},
+			person3: {
+				name: "a3",
+				age: 45
+			}
+		}
+	});
+
+	const res = state.get({
+		group: {
+			_: "$key"
+		}
+	});
+
+	expect(res).toEqual({
+		group: ["person1", "person2", "person3"]
+	});
+});

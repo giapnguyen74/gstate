@@ -1,6 +1,6 @@
 {
 	"name": "gstate",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"description": "Agnostic graph based state management",
 	"main": "lib/index.js",
 	"directories": {
@@ -21,13 +21,13 @@
 	},
 	"homepage": "https://github.com/giapnguyen74/gstate#readme",
 	"devDependencies": {
+		"@types/node": "^8.0.34",
 		"babel-cli": "^6.26.0",
-		"babel-preset-env": "^1.6.0",
 		"babel-preset-es2015": "^6.24.1",
-		"eslint": "^4.6.1",
-		"jest": "^21.0.2",
-		"sift": "^5.0.0",
-		"webpack": "^3.6.0"
+		"benchmark": "^2.1.4",
+		"nano": "^6.4.2",
+		"nedb": "^1.8.0",
+		"sift": "^5.0.0"
 	},
 	"jest": {
 		"testEnvironment": "jsdom"

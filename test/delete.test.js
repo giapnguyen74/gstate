@@ -99,37 +99,3 @@ test("delete#no existed value", function() {
 
 	expect(res).toEqual({ a: { b: "b" } });
 });
-
-test("delete#can not delete root", function() {
-	const state = new GState();
-	expect(() => state.delete([])).toThrow("Invalid key");
-	expect(state._rootNode).toEqual({});
-});
-
-test("delete#recursive", function() {
-	const state = new GState();
-	let counts = 0;
-	const val = {
-		a: {
-			b: {
-				c: "c"
-			}
-		}
-	};
-	val.a.b.d = val.a.b;
-	state.set(val);
-	state.watch(
-		{
-			a: {
-				b: 1
-			}
-		},
-		function(res) {
-			counts++;
-			counts == 1 && expect(res).toEqual({ a: { b: { c: "c" } } });
-			counts == 2 && expect(res).toEqual({ a: {} });
-		}
-	);
-
-	state.delete("a.b.d");
-});

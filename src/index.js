@@ -1,226 +1,186 @@
-const { get_tag, unique_id, tags } = require("./util");
-const { clone_obj } = require("./clone");
-const { merge_node, create_node, delete_path } = require("./merge");
-const { create_tracker } = require("./tracker");
-const { get_query } = require("./get");
-const op = require("./op");
-
-function to_path(key) {
-	const _key = Array.isArray(key) ? key : key.split(".");
-	if (_key.length < 1) {
-		throw new Error("Invalid key " + key);
-	}
-	return _key;
-}
-
-function get_path(obj, key) {
-	for (let i = 0; i < key.length; i++) {
-		const prop = key[i];
-		if (get_tag(obj[prop]) != "[object Object]") {
-			return obj[prop];
-		}
-		obj = obj[prop];
-	}
-	return obj;
-}
-
-function set_path(obj, key, value) {
-	if (key.length == 0) {
-		return Object.assign(obj, value); //value has high priority
-	}
-	let _obj = obj;
-	for (let i = 0; i < key.length - 1; i++) {
-		const prop = key[i];
-		_obj[prop] = _obj[prop] || {};
-		_obj = _obj[prop];
-	}
-	_obj[key[key.length - 1]] = value;
-	return obj;
-}
+const { to_path, value_type, ValueTypes, PatchTypes } = require("./util");
+const create_tracker = require("./tracker");
+const { calc_patches, calc_delete_patch } = require("./patch");
+const { apply_patch, create_node } = require("./apply");
+const { get_query, get_path, on_watch_callback } = require("./get");
+let counter = Date.now() % 1e9;
 
 class Context {
-	constructor(state, key) {
-		this.key = key;
+	constructor(state, key, debug) {
 		this.state = state;
-		this._rootNode = state._rootNode;
-		this._watchers = state._watchers;
-		this._readers = state._readers;
-
+		this.key = key;
+		debug = debug || state.debug;
+		this.log = debug ? console.log : () => {};
 		this._batch_tracker = undefined;
-
-		this.log = state.debug ? console.log : () => undefined;
-		this.op = op;
 	}
 
-	path(key) {
-		key = to_path(key);
-		return new Context(this.state, this.key.concat(key));
+	/**
+	 * Create new sub context
+	 * @param {*} key 
+	 * @param {*} [debug] 
+	 */
+	path(key, debug) {
+		key = to_path(this.key, key);
+		return new Context(this.state, key, debug);
 	}
 
-	set(value) {
-		if (get_tag(value) != tags.OBJECT) {
-			throw new Error("Value should be an object");
-		}
-
-		const tracker = this._batch_tracker
+	ref(path) {
+		path = Array.isArray(path) ? path : path.split(".");
+		return { _: "$ref", path };
+	}
+	/**
+	 * Set value 
+	 * @param {*} path 
+	 * @param {*} value 
+	 */
+	set(path, value) {
+		const _tracker = this._batch_tracker
 			? this._batch_tracker
 			: create_tracker();
 
-		//support root value
-		const rootVal = value["#"];
-		let rootObj = {};
-		if (rootVal) {
-			if (get_tag(rootVal) != tags.OBJECT) {
-				throw new Error("Root value should be an object");
-			}
-			rootObj = clone_obj([], rootVal, tracker);
+		if (value_type(path) == ValueTypes.OBJECT) {
+			value = path;
+			path = this.key;
+		} else {
+			path = to_path(this.key, path);
 		}
 
-		value = clone_obj(this.key, value, tracker);
-		value = set_path(rootObj, this.key, value);
+		const patches = calc_patches(this, path, value, _tracker);
 
-		merge_node(this._rootNode, value, this);
+		for (let i = 0; i < patches.length; i++) {
+			apply_patch(this, patches[i], _tracker);
+		}
+
 		if (!this._batch_tracker) {
-			Object.keys(this._watchers).forEach(k => this._watchers[k].get());
+			_tracker.watchers.forEach(w => w());
 		}
 	}
 
+	/**
+	 * Delete value at path
+	 * @param {*} path 
+	 * @param {*} [tracker]
+	 */
+	delete(path) {
+		path = to_path(this.key, path);
+		const patch = calc_delete_patch(this, path);
+		const _tracker = this._batch_tracker
+			? this._batch_tracker
+			: create_tracker();
+
+		apply_patch(this, patch, _tracker);
+
+		if (!this._batch_tracker) {
+			_tracker.watchers.forEach(w => w());
+		}
+	}
+
+	/**
+	 * batch multiple set calls
+	 * @param {*} fn 
+	 */
 	batch(fn) {
 		this._batch_tracker = create_tracker();
-		fn(this);
-		Object.keys(this._watchers).forEach(k => this._watchers[k].get());
+		fn();
+		this._batch_tracker.watchers.forEach(w => w());
 		this._batch_tracker = undefined;
 	}
 
-	get(query, watcher) {
-		let path = this.key;
-
-		// query is a path
-		const queryTag = get_tag(query);
-		if (queryTag == tags.STRING || queryTag == tags.ARRAY) {
-			path = path.concat(to_path(query));
-			query = set_path({}, path, 1);
-		} else if (query == tags.OBJECT) {
-			query = set_path({}, path, query);
+	/**
+	 * Query state 
+	 * @param {*} query 
+	 * @param {*} [options] 
+	 * @param {*} [watcher] 
+	 */
+	get(query, options) {
+		if (value_type(query) == ValueTypes.OBJECT) {
+			return get_query(this, query, options);
 		} else {
-			throw new Error("Query should be string, array or object.");
-		}
-
-		let res = get_query(this._rootNode, null, query, watcher, this);
-
-		setTimeout(() =>
-			Object.keys(this._readers).forEach(k => this._readers[k].notify())
-		);
-
-		return get_path(res, path);
-	}
-
-	delete(key) {
-		key = to_path(key);
-		key = this.key.concat(key);
-		delete_path(this._rootNode, key, this);
-		if (!this._batch_tracker) {
-			Object.keys(this._watchers).forEach(k => this._watchers[k].get());
+			const path = to_path(this.key, query);
+			return get_path(this, path, options);
 		}
 	}
 
-	watch(query, cb) {
-		const w = unique_id();
-		let result = undefined;
+	/**
+	 * Watch state
+	 * @param {*} query 
+	 * @param {*} options 
+	 * @param {*} [cb] 
+	 */
+	watch(query, options, cb) {
+		if (!cb) {
+			cb = options;
+			options = {};
+		}
 
-		this._watchers[w] = () => {
-			result = undefined;
+		counter++;
+		const w = counter;
+
+		this.state.watchers[w] = () => {
+			options.watcher = w;
+			const result = this.get(query, options);
+			cb(result);
 		};
 
-		this._watchers[w].get = () => {
-			if (result === undefined) {
-				result = this.get(query, w);
-				cb(result);
-			}
-		};
-
-		this._watchers[w].get();
+		this.state.watchers[w]();
 
 		return () => {
-			delete this._watchers[w];
+			delete this.state.watchers[w];
 		};
 	}
 
-	reader(key, cb) {
-		const r = unique_id();
-		key = to_path(key);
-		const node = get_path(this._rootNode, this.key.concat(key));
-		if (!node || !node._) {
-			throw new Error("Reader should be added into a existed node");
-		}
-		node._.readers.add(r);
-
-		let props = [];
-
-		this._readers[r] = (node, prop) => {
-			props.push(prop);
-		};
-
-		this._readers[r].notify = () => {
-			if (props.length > 0) {
-				cb(node, props);
-			}
-			props = [];
-		};
-
-		return () => {
-			delete this._readers[r];
-		};
+	onWatchCallback(path, cb) {
+		path = to_path(this.key, path);
+		return on_watch_callback(this, path, cb);
 	}
 }
 
 class GState {
 	constructor(options = {}) {
-		this._rootNode = create_node();
-		this._rootNode._.isRoot = true;
-		this._watchers = {};
-		this._readers = {};
+		this.rootNode = create_node();
 		this.onMapCallback = options.onMapCallback;
+		this.watchers = {};
 		this.debug = options.debug;
-		this.op = op;
-		this.rootContext = new Context(this, []);
+		this.rootContext = new Context(this, [], options.debug);
 	}
 
-	path(key) {
-		return this.rootContext.path(key);
+	ref(path) {
+		return this.rootContext.ref(path);
+	}
+	path(key, debug) {
+		return this.rootContext.path(key, debug);
 	}
 
-	set(value) {
-		return this.rootContext.set(value);
-	}
-
-	get(query, watcher) {
-		return this.rootContext.get(query, watcher);
+	set(path, value) {
+		return this.rootContext.set(path, value);
 	}
 
 	batch(fn) {
 		return this.rootContext.batch(fn);
 	}
 
-	reader(key, cb) {
-		return this.rootContext.reader(key, cb);
-	}
-
-	watch(query, cb) {
-		return this.rootContext.watch(query, cb);
+	get(query, watcher) {
+		return this.rootContext.get(query, watcher);
 	}
 
 	delete(key) {
 		return this.rootContext.delete(key);
 	}
 
-	save() {
-		const tracker = create_tracker();
-		return clone_obj([], this._rootNode, tracker);
+	watch(query, cb) {
+		return this.rootContext.watch(query, cb);
 	}
 
-	load(value) {
-		return merge_node(this._rootNode, value, this.rootContext);
+	onWatchCallback(path, cb) {
+		return this.rootContext.onWatchCallback(path, cb);
+	}
+
+	use(plugin, options) {
+		if (typeof plugin == "function") {
+			plugin(this, options);
+		} else {
+			plugin.install(this, options);
+		}
 	}
 }
 

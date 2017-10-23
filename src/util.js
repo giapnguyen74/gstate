@@ -1,39 +1,58 @@
-let counter = Date.now() % 1e9;
+const toString = Object.prototype.toString;
 
-function unique_id() {
-	counter++;
-	return counter + "." + ((Math.random() * 1e9) >>> 0);
+function value_type(value) {
+	return toString.call(value);
 }
 
-function get_tag(value) {
-	const tag = Object.prototype.toString.call(value);
-
-	if (tag == tags.OBJECT) {
-		if (value._ && value._.deleted) {
-			return tags.DELETED;
-		}
-		if (value._ == "ref") {
-			return tags.REF;
-		}
+function node_type(value) {
+	if (value && value._) {
+		return value._.type || NodeTypes.NODE;
 	}
-	return tag;
+	return NodeTypes.VALUE;
 }
 
-const tags = {
+/**
+ * 
+ * @param {*} prefix 
+ * @param {*} path 
+ */
+function to_path(prefix, path) {
+	path = Array.isArray(path) ? path : path.split(".");
+	if (path[0] == "#") {
+		return path.slice(1);
+	} else {
+		return prefix.concat(path);
+	}
+}
+
+const ValueTypes = {
 	OBJECT: "[object Object]",
 	ARRAY: "[object Array]",
-	DELETED: "[object Deleted]",
 	DATE: "[object Date]",
 	NUMBER: "[object Number]",
 	BOOLEAN: "[object Boolean]",
 	NULL: "[object Null]",
 	UNDEFINED: "[object Undefined]",
-	STRING: "[object String]",
-	REF: "[object Ref]"
+	STRING: "[object String]"
+};
+
+const NodeTypes = {
+	NODE: 0,
+	DELETED_NODE: -1,
+	VALUE: 1
+};
+
+const PatchTypes = {
+	REFERENCE: "$r",
+	DEL: "$d",
+	NODE: "$n"
 };
 
 module.exports = {
-	unique_id,
-	get_tag,
-	tags
+	value_type,
+	ValueTypes,
+	node_type,
+	NodeTypes,
+	PatchTypes,
+	to_path
 };

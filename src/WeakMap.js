@@ -1,8 +1,8 @@
-const { unique_id } = require("./util");
-
+let counter = Date.now() % 1e9;
 class WeakMap {
 	constructor() {
-		this.name = "__wm-" + unique_id();
+		counter++;
+		this.name = "__wm-" + counter;
 	}
 
 	set(key, value) {

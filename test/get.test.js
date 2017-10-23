@@ -239,3 +239,96 @@ test("get#complex circular", function() {
 		]
 	});
 });
+
+test("get#key op for nested object", function() {
+	const state = new GState();
+	const value = {
+		a: {
+			b: {
+				c: {
+					x: "c"
+				},
+				d: {
+					x: "d"
+				}
+			}
+		}
+	};
+	state.set(value);
+	const res = state.get({
+		a: {
+			b: {
+				_: "$key"
+			}
+		}
+	});
+
+	expect(res).toEqual({ a: { b: ["c", "d"] } });
+});
+
+test("get#key op for array", function() {
+	const state = new GState();
+	const value = {
+		a: {
+			b: [1, 2, 4, { a: 1 }]
+		}
+	};
+	state.set(value);
+	const res = state.get({
+		a: {
+			b: {
+				_: "$key"
+			}
+		}
+	});
+
+	expect(res).toEqual({ a: { b: ["0", "1", "2", "3"] } });
+});
+
+test("get#value path", function() {
+	const state = new GState();
+	const value = {
+		a: {
+			b: "b"
+		}
+	};
+
+	state.set(value);
+
+	const res = state.get("a.c");
+	expect(res).toEqual(undefined);
+});
+
+test("get#deleted path", function() {
+	const state = new GState();
+	const value = {
+		a: {
+			b: {
+				c: "c"
+			}
+		}
+	};
+	value.x = value.a.b;
+
+	state.set(value);
+	state.delete("x");
+	const res = state.get("a.b.c");
+	expect(res).toEqual(undefined);
+});
+
+test("get#deleted value", function() {
+	const state = new GState();
+	const value = {
+		a: {
+			b: {
+				c: "c"
+			}
+		}
+	};
+	value.x = value.a.b;
+
+	state.set(value);
+	state.delete("x");
+	const res = state.get("a.b");
+	expect(res).toEqual(undefined);
+});

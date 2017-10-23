@@ -1,10 +1,13 @@
 const WeakMap = require("./WeakMap");
 const wm = new WeakMap();
-const { unique_id } = require("./util");
+
+let counter = Date.now() % 1e9;
 
 function create_tracker() {
-	const name = unique_id();
+	counter++;
+	const name = counter;
 	return {
+		watchers: new Set(),
 		getRef(value) {
 			const tracker_value = wm.get(value);
 			if (tracker_value && tracker_value[0] == name) {
@@ -17,7 +20,4 @@ function create_tracker() {
 		}
 	};
 }
-
-module.exports = {
-	create_tracker
-};
+module.exports = create_tracker;

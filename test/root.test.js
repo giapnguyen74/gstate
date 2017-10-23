@@ -20,7 +20,7 @@ test("root#simple", function() {
 });
 
 test("root#complex", function() {
-	const rootState = new GState({ debug: true });
+	const rootState = new GState({});
 	const state = rootState.path("child");
 
 	state.set({
@@ -45,7 +45,7 @@ test("root#complex", function() {
 });
 
 test("root#anchor", function() {
-	const rootState = new GState({ debug: true });
+	const rootState = new GState({});
 	const state = rootState.path("child");
 
 	const obj = {
@@ -87,14 +87,15 @@ test("root#anchor", function() {
 });
 
 test("root#anchor with op ref", function() {
-	const rootState = new GState({ debug: true });
+	const rootState = new GState({});
 	const state = rootState.path("child");
 
 	const obj = {
 		a: "a"
 	};
+
 	state.set({
-		me: [state.op.$ref("items.a")],
+		me: [state.ref("#.items.a")],
 		"#": {
 			items: {
 				a: obj
