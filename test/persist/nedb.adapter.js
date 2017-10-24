@@ -39,7 +39,7 @@ class NedbAdapter {
 		return new Promise((ok, fail) => {
 			this._db.update(
 				{ _id: path },
-				{ v: value },
+				{ $set: flatten("v", value) },
 				(err, numAffected) =>
 					err || numAffected == 0 ? fail(err) : ok()
 			);

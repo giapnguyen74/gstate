@@ -167,8 +167,8 @@ class GState {
 		return this.rootContext.delete(key);
 	}
 
-	watch(query, cb) {
-		return this.rootContext.watch(query, cb);
+	watch(query, options, cb) {
+		return this.rootContext.watch(query, options, cb);
 	}
 
 	onWatchCallback(path, cb) {
