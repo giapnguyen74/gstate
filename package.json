@@ -1,6 +1,6 @@
 {
 	"name": "gstate",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "Agnostic graph based state management",
 	"main": "lib/index.js",
 	"directories": {
