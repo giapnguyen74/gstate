@@ -12,6 +12,7 @@ class Context {
 		debug = debug || state.debug;
 		this.log = debug ? console.log : () => {};
 		this._batch_tracker = undefined;
+		this._batch_watcher = undefined;
 	}
 
 	/**
@@ -25,7 +26,7 @@ class Context {
 	}
 
 	ref(path) {
-		path = Array.isArray(path) ? path : path.split(".");
+		path = to_path(this.key, path);
 		return { _: "$ref", path };
 	}
 	/**
@@ -93,6 +94,8 @@ class Context {
 	 * @param {*} [watcher] 
 	 */
 	get(query, options) {
+		options = this._batch_watcher ? this._batch_watcher : options;
+
 		if (value_type(query) == ValueTypes.OBJECT) {
 			return get_query(this, query, options);
 		} else {
@@ -117,8 +120,16 @@ class Context {
 		const w = counter;
 
 		this.state.watchers[w] = () => {
+			let result;
 			options.watcher = w;
-			const result = this.get(query, options);
+			if (typeof query == "function") {
+				this._batch_watcher = options;
+				result = query(this);
+				this._batch_watcher = undefined;
+			} else {
+				result = this.get(query, options);
+			}
+
 			cb(result);
 		};
 

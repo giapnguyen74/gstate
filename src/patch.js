@@ -1,10 +1,4 @@
-const {
-	value_type,
-	ValueTypes,
-	patch_type,
-	PatchTypes,
-	to_path
-} = require("./util");
+const { value_type, ValueTypes, patch_type, PatchTypes } = require("./util");
 
 /**
  * 
@@ -74,8 +68,7 @@ function calc_patches_any(context, patches, path, value, tracker) {
 	if (valueType == ValueTypes.OBJECT) {
 		if (value.propertyIsEnumerable("_")) {
 			if (value["_"] == "$ref") {
-				const refPath = to_path(context.key, value.path);
-				return patches.push([path, [PatchTypes.REFERENCE, refPath]]);
+				return patches.push([path, [PatchTypes.REFERENCE, value.path]]);
 			}
 			throw new Error("Underscore property is reserved");
 		}

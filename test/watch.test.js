@@ -414,7 +414,7 @@ test("onWatchCallBack", function(done) {
 	value = { a: { b: "b" } };
 	state.set(value);
 
-	state.onWatchCallback("a", (node, query, options) => {
+	state.onWatchCallback("a", query => {
 		expect(query).toEqual({ b: { c: 1 } });
 		done();
 	});

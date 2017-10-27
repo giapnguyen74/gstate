@@ -6,6 +6,9 @@ GState is graph-based state management which could use to manage both client and
 $ npm i -S gstate
 ```
 
+## Changes
+* 0.1.3 - state.watch with ad-hoc state.get queries (same with state.batch but for read side). It's used for [imperative state pattern](https://anhanh.gitbooks.io/gstate/content/guides/imperative-state.html)
+
 ## Documentation
 [Full gstate document](https://anhanh.gitbooks.io/gstate/content/)
 
